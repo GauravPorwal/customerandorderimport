@@ -1,0 +1,78 @@
+Step 1.
+
+mysql -uroot -p < script.sql
+
+Step 2.
+
+last common customer_id = 211782
+Last common Order ID is = WS60101113 ( entity id = 261495 )
+
+Calculate the difference of the customer id and the max entity id in target database
+Calculate the difference of the customer address id and the max customer id in target database
+
+select max(t.entity_id) - min(s.entity_id) + 100  as delta_customer_id FROM prod_gcus.customer_entity as t, migration_db.customer_entity s WHERE s.entity_id > '211782';
+
+select max(t.entity_id) - min(s.entity_id) + 100  as delta_customer_address_id FROM prod_gcus.customer_address_entity as t, migration_db.customer_address_entity s WHERE s.parent_id > '211782';
+
+Delta customer id = 403
+Delta customer address id = 239825
+Update the values in script1.sql
+
+Step 3.
+
+mysql -uroot -p < script1.sql
+Step 4.
+
+select max(t.entity_id) - min(s.entity_id) + 100  as delta_order_id FROM prod_gcus.sales_flat_order as t, migration_db.sales_flat_order s WHERE s.entity_id > '261495';
+
+select max(t.entity_id) - min(s.entity_id) + 100  as delta_order_address_id FROM prod_gcus.sales_flat_order_address as t, migration_db.sales_flat_order_address s WHERE s.parent_id > '261495'; 
+
+Update the values in script 2
+
+Step 5.
+mysql -uroot -p < script2.sql
+
+Step 6.
+select max(t.item_id) - min(s.item_id) + 100  as delta_customer_id FROM prod_gcus.sales_flat_order_item as t, migration_db.sales_flat_order_item s;
+
+select max(t.tax_id) - min(s.tax_id) + 100  as delta_tax_id FROM prod_gcus.sales_order_tax as t, migration_db.sales_order_tax s;
+Update the values in script 3
+Step 7. 
+mysql -uroot -p < script3.sql
+
+Step 8.
+
+select max(t.entity_id) - min(s.entity_id) + 100  as delta_payment_id FROM prod_gcus.sales_flat_order_payment as t, migration_db.sales_flat_order_payment s;
+Update it in script 4
+
+Step 9.
+
+mysql -uroot -p < script4.sql
+
+mysqldump -u root -p migration_db --no-create-info sales_flat_order sales_flat_order_address  sales_flat_order_grid sales_flat_order_item sales_flat_order_payment sales_flat_order_status_history sales_order_tax sales_order_tax_item  > order_update.sql
+
+bash addordercolumn.sh
+
+
+Step 10. 
+
+Clean the  customers
+mysql -uroot -p < script5.sql
+
+Step 11.
+
+Compare and find the common customer id via email address
+
+SELECT group_concat(m.entity_id) FROM migration_db.customer_entity m
+	LEFT JOIN prod_gcus.customer_entity n
+	ON  m.email=n.email WHERE n.entity_id is not null;
+
+Update script 6
+
+Step 12. 
+
+mysql -uroot -p < script6.sql
+
+mysqldump -u root -p migration_db --no-create-info customer_entity customer_address_entity customer_address_entity_datetime customer_address_entity_decimal customer_address_entity_int customer_address_entity_text customer_address_entity_varchar customer_entity_datetime customer_entity_decimal customer_entity_int customer_entity_text customer_entity_varchar > update_customer_data.sql
+
+bash addColumn.sh
